@@ -64,9 +64,26 @@ module Markaby
 
       private
 
+        if ::Rails::VERSION::STRING == "2.2.0"
+          def __template__
+            @view.instance_variable_get("@_last_render")
+          end
+        else
+          def __template__
+            @view.template
+          end
+        end
+
         def method_missing(sym, *args, &block)
           result = @proxied_object.__send__(sym, *args, &block)
-          @view.concat(result)
+
+          # a markaby template may call render :partial with the form proxy helper.
+          # we only want to manually concat _if_ we are in a markaby template (not, say, erb)
+          if __template__.extension == "mab"
+            @view.concat(result)
+          end
+
+          result
         end
       end
     end
